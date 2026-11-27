@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.ViewWeek
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -62,6 +63,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -305,6 +307,55 @@ fun EditorScreen(
             onUpdatePrintOptions = viewModel::updatePrintOptions
         )
     }
+
+    if (state.showCutPrompt) {
+        CutPromptDialog(
+            copies = state.printOptions.copies,
+            chainPrint = state.printOptions.chainPrint,
+            onDismiss = viewModel::dismissCutPrompt
+        )
+    }
+}
+
+@Composable
+private fun CutPromptDialog(
+    copies: Int,
+    chainPrint: Boolean,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Печать завершена") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    if (copies > 1) {
+                        "Лента с $copies этикетками выведена из принтера."
+                    } else {
+                        "Этикетка выведена из принтера."
+                    },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    "Нажмите на нож, чтобы отрезать ленту.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (copies > 1 && chainPrint) {
+                    Text(
+                        "Chain Print: этикетки напечатаны встык одной лентой — разрежьте её между этикетками.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Готово")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)

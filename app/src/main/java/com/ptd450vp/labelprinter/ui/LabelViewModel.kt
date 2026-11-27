@@ -47,6 +47,7 @@ data class LabelUiState(
     val simulatedTapeWidth: TapeWidth = TapeWidth.MM_12,
     val simulateCoverOpen: Boolean = false,
     val isBusy: Boolean = false,
+    val showCutPrompt: Boolean = false,
     val feedbackMessage: String? = null,
     val feedbackIsError: Boolean = false,
     val pendingImageBlockId: String? = null
@@ -273,7 +274,8 @@ class LabelViewModel(application: Application) : AndroidViewModel(application) {
                         it.copy(
                             isBusy = false,
                             lastPacket = result.packet,
-                            lastStatus = result.postStatus ?: it.lastStatus
+                            lastStatus = result.postStatus ?: it.lastStatus,
+                            showCutPrompt = true
                         )
                     }
                     showFeedback(result.message, isError = false)
@@ -294,6 +296,10 @@ class LabelViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearFeedback() {
         _uiState.update { it.copy(feedbackMessage = null) }
+    }
+
+    fun dismissCutPrompt() {
+        _uiState.update { it.copy(showCutPrompt = false) }
     }
 
     private fun currentTransport() = when (_uiState.value.transportMode) {

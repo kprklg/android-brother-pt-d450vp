@@ -2,6 +2,12 @@
 
 Все значимые изменения проекта фиксируются в этом файле. Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версионирование — [Semantic Versioning](https://semver.org/).
 
+## [v0.1.5] - 2026-11-27
+
+### Добавлено
+- **Диалог после печати «Нажмите на нож, чтобы отрезать ленту»** (`showCutPrompt` в `LabelViewModel`, `CutPromptDialog` в `EditorScreen`): один диалог на всю партию, при `Chain Print` — подсказка разрезать ленту между этикетками.
+- Скриншот `docs/screenshots/05-cut-prompt.png` и строка о подсказке об отрезе в `README.md`.
+
 ## [v0.1.4] - 2026-11-27
 
 ### Изменено
