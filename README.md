@@ -2,7 +2,9 @@
 
 Нативное Android-приложение (Kotlin + Jetpack Compose + Material 3) для прямой печати этикеток на принтере **Brother PT-D450 / PT-D450VP** через кабель **USB OTG** по бинарному растровому протоколу Brother P-touch Raster (без проприетарного SDK).
 
-## Возможности (`v0.1.0`)
+**Текущая версия:** [`v0.1.1`](https://github.com/kprklg/android-brother-pt-d450vp/releases/tag/v0.1.1) · [CHANGELOG](CHANGELOG.md) · [План задач](TASKS.md)
+
+## Возможности
 
 - **Прямое подключение по USB OTG (`android.hardware.usb`)**:
   - Подтверждённый на реальном устройстве идентификатор: `VID 0x04F9`, `PID 0x2073` (`Brother Industries, Ltd PT-D450`).
