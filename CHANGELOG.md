@@ -1,0 +1,19 @@
+# Changelog
+
+Все значимые изменения проекта фиксируются в этом файле. Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версионирование — [Semantic Versioning](https://semver.org/).
+
+## [v0.1.0] - 2026-11-27
+
+### Добавлено
+- Полноценный Android-проект (`com.ptd450vp.labelprinter`, Kotlin, Jetpack Compose, Material 3, minSdk 26, targetSdk 35).
+- Редактор этикеток из комбинируемых блоков:
+  - однострочный и многострочный текст (выбор шрифта, жирный/курсив, выравнивание, ручной размер и автоподбор);
+  - QR-коды (ZXing, UTF-8, уровни коррекции `L/M/Q/H`);
+  - штрихкоды (`Code 128`, `EAN-13`, `Code 39`, `Data Matrix`, толщина штриха, подпись);
+  - изображения из галереи (пороговая бинаризация, дизеринг Флойда–Стейнберга, инверсия, масштаб);
+  - живой 1-битный WYSIWYG-предпросмотр под ширины TZe 3.5 / 6 / 9 / 12 / 18 мм.
+- Система шаблонов: 6 встроенных + сохранение и удаление пользовательских шаблонов в JSON.
+- Драйвер протокола Brother P-touch Raster (`RasterProtocol`, `PackBitsEncoder`, `PrinterStatus`) с юнит-тестами.
+- USB Host (USB OTG) транспорт (`UsbPrinterTransport`, `device_filter.xml`) и встроенный симулятор принтера (`MockPrinterTransport`).
+- Подтверждение реальных параметров подключённого принтера Brother PT-D450VP (`VID 04F9`, `PID 2073`, `modelCode 0x69`, 32-байтный статус `ESC i S`).
+- Инфраструктура репозитория: `git-crypt`, `group_vars/all/secrets.yml`, зашифрованный экспорт сессий `session/*.json`, `TASKS.md`, пошаговая документация в `docs/`, идемпотентные скрипты в `scripts/`.

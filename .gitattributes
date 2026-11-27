@@ -1,0 +1,7 @@
+# Encrypted sensitive files (git-crypt)
+group_vars/all/secrets.yml filter=git-crypt diff=git-crypt
+group_vars/**/secrets.yml filter=git-crypt diff=git-crypt
+session/*.json filter=git-crypt diff=git-crypt
+session/**/*.json filter=git-crypt diff=git-crypt
+*.secret filter=git-crypt diff=git-crypt
+*.key filter=git-crypt diff=git-crypt
