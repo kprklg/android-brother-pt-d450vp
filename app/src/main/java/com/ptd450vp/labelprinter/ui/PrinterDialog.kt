@@ -211,7 +211,7 @@ fun PrinterDialog(
                 )
 
                 OptionSwitchRow(
-                    label = "Chain Print (экономия ленты)",
+                    label = "Chain Print (экономия ленты между копиями)",
                     checked = state.printOptions.chainPrint,
                     onCheckedChange = { checked ->
                         onUpdatePrintOptions { it.copy(chainPrint = checked) }
@@ -225,7 +225,7 @@ fun PrinterDialog(
                     }
                 )
                 OptionSwitchRow(
-                    label = "Зеркалить по вертикали (ориентация головки)",
+                    label = "Зеркалить по вертикали (калибровка: выключено)",
                     checked = state.printOptions.mirrorVertical,
                     onCheckedChange = { checked ->
                         onUpdatePrintOptions { it.copy(mirrorVertical = checked) }

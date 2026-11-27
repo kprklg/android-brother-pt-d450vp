@@ -108,7 +108,7 @@ object RasterProtocol {
      */
     fun imageToRasterLines(
         image: MonochromeImage,
-        mirrorVertical: Boolean = true
+        mirrorVertical: Boolean = false
     ): List<ByteArray> {
         val marginPins = (TapeWidth.PRINTHEAD_PINS - image.height) / 2
         val lines = ArrayList<ByteArray>(image.width)

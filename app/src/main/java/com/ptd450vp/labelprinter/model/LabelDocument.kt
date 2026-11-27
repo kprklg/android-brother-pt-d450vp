@@ -107,7 +107,7 @@ data class LabelDocument(
 data class PrintOptions(
     val copies: Int = 1,
     val feedMarginDots: Int = 14, // ~2 mm
-    val chainPrint: Boolean = false, // Saves tape when printing multiple labels
+    val chainPrint: Boolean = true, // Saves tape between labels/copies (FF without eject)
     val useCompression: Boolean = true, // PackBits TIFF (standard for PT-D450)
-    val mirrorVertical: Boolean = true // Brother P-touch printhead orientation
+    val mirrorVertical: Boolean = false // Calibrated on real PT-D450VP: no mirroring needed
 )
