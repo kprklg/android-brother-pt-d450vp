@@ -5,9 +5,12 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.ptd450vp.labelprinter.data.ProjectCodec
+import com.ptd450vp.labelprinter.data.ProjectRepository
 import com.ptd450vp.labelprinter.data.TemplateRepository
 import com.ptd450vp.labelprinter.model.LabelBlock
 import com.ptd450vp.labelprinter.model.LabelDocument
+import com.ptd450vp.labelprinter.model.LabelProject
 import com.ptd450vp.labelprinter.model.LabelTemplate
 import com.ptd450vp.labelprinter.model.PrintOptions
 import com.ptd450vp.labelprinter.model.TapeWidth
@@ -27,6 +30,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.util.UUID
 
 enum class TransportMode {
     USB_OTG,
@@ -50,12 +55,16 @@ data class LabelUiState(
     val showCutPrompt: Boolean = false,
     val feedbackMessage: String? = null,
     val feedbackIsError: Boolean = false,
-    val pendingImageBlockId: String? = null
+    val pendingImageBlockId: String? = null,
+    val projects: List<LabelProject> = emptyList(),
+    val currentProjectId: String? = null,
+    val currentProjectName: String = "Мой проект"
 )
 
 class LabelViewModel(application: Application) : AndroidViewModel(application) {
 
     private val templateRepository = TemplateRepository(application)
+    private val projectRepository = ProjectRepository(application)
     private val usbTransport = UsbPrinterTransport(application)
     private val mockTransport = MockPrinterTransport()
 
@@ -64,7 +73,12 @@ class LabelViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         val initialTemplates = templateRepository.getAllTemplates()
-        _uiState.update { it.copy(templates = initialTemplates) }
+        _uiState.update {
+            it.copy(
+                templates = initialTemplates,
+                projects = projectRepository.list()
+            )
+        }
         refreshUsbInventory(autoSwitchIfDetected = true)
         renderCurrentDocument()
     }
@@ -164,6 +178,105 @@ class LabelViewModel(application: Application) : AndroidViewModel(application) {
         templateRepository.deleteUserTemplate(id)
         _uiState.update { it.copy(templates = templateRepository.getAllTemplates()) }
         showFeedback("Шаблон удалён", isError = false)
+    }
+
+    fun saveProject(name: String, saveAsCopy: Boolean = false) {
+        val trimmed = name.trim().ifEmpty { "Мой проект" }
+        val state = _uiState.value
+        val project = LabelProject(
+            id = if (saveAsCopy) UUID.randomUUID().toString()
+            else state.currentProjectId ?: UUID.randomUUID().toString(),
+            name = trimmed,
+            document = state.document,
+            printOptions = state.printOptions
+        )
+        runCatching { projectRepository.save(project) }.fold(
+            onSuccess = { saved ->
+                refreshProjects()
+                _uiState.update { it.copy(currentProjectId = saved.id, currentProjectName = saved.name) }
+                showFeedback("Проект «${saved.name}» сохранён", isError = false)
+            },
+            onFailure = { err ->
+                showFeedback("Ошибка сохранения проекта: ${err.message}", isError = true)
+            }
+        )
+    }
+
+    fun openProject(project: LabelProject) {
+        updateDocument { project.document }
+        updatePrintOptions { project.printOptions }
+        _uiState.update {
+            it.copy(currentProjectId = project.id, currentProjectName = project.name)
+        }
+        showFeedback("Проект «${project.name}» открыт", isError = false)
+    }
+
+    fun deleteProject(id: String) {
+        runCatching { projectRepository.delete(id) }.fold(
+            onSuccess = {
+                refreshProjects()
+                if (_uiState.value.currentProjectId == id) {
+                    _uiState.update {
+                        it.copy(currentProjectId = null, currentProjectName = "Мой проект")
+                    }
+                }
+                showFeedback("Проект удалён", isError = false)
+            },
+            onFailure = { err ->
+                showFeedback("Ошибка удаления проекта: ${err.message}", isError = true)
+            }
+        )
+    }
+
+    fun exportProject(uri: Uri) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val state = _uiState.value
+                    val project = LabelProject(
+                        id = state.currentProjectId ?: UUID.randomUUID().toString(),
+                        name = state.currentProjectName,
+                        document = state.document,
+                        printOptions = state.printOptions
+                    )
+                    val output = getApplication<Application>().contentResolver.openOutputStream(uri)
+                        ?: throw IOException("Не удалось открыть файл для записи")
+                    output.use { it.write(ProjectCodec.encode(project).toByteArray(Charsets.UTF_8)) }
+                    project.name
+                }
+            }
+            result.fold(
+                onSuccess = { name -> showFeedback("Проект «$name» экспортирован в файл", isError = false) },
+                onFailure = { err -> showFeedback("Ошибка экспорта: ${err.message}", isError = true) }
+            )
+        }
+    }
+
+    fun importProject(uri: Uri) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val input = getApplication<Application>().contentResolver.openInputStream(uri)
+                        ?: throw IOException("Не удалось открыть файл проекта")
+                    val text = input.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                    val decoded = ProjectCodec.decode(text)
+                    // Imported file always becomes a new local project, keeping the original id unique.
+                    projectRepository.save(decoded.copy(id = UUID.randomUUID().toString()))
+                }
+            }
+            result.fold(
+                onSuccess = { saved ->
+                    openProject(saved)
+                    refreshProjects()
+                    showFeedback("Проект «${saved.name}» импортирован", isError = false)
+                },
+                onFailure = { err -> showFeedback("Ошибка импорта: ${err.message}", isError = true) }
+            )
+        }
+    }
+
+    private fun refreshProjects() {
+        _uiState.update { it.copy(projects = projectRepository.list()) }
     }
 
     fun setTransportMode(mode: TransportMode) {

@@ -10,7 +10,8 @@ app/src/main/java/com/ptd450vp/labelprinter/
 ├── model/
 │   ├── TapeSpec.kt              # Спецификации лент TZe (3.5/6/9/12/18 мм, 180 dpi, 128 пинов)
 │   ├── LabelDocument.kt         # Модель документа, блоков (Text/QR/Barcode/Image) и PrintOptions
-│   └── LabelTemplate.kt         # Модель шаблона этикетки
+│   ├── LabelTemplate.kt         # Модель шаблона этикетки
+│   └── LabelProject.kt          # Модель проекта (документ + настройки печати, версия формата)
 ├── render/
 │   ├── BarcodeGenerator.kt      # Генерация QR (UTF-8), Code 128, EAN-13, Code 39, Data Matrix (ZXing)
 │   ├── Dithering.kt             # Пороговая бинаризация и дизеринг Флойда–Стейнберга
@@ -22,12 +23,15 @@ app/src/main/java/com/ptd450vp/labelprinter/
 │   ├── PrinterTransport.kt      # Интерфейс транспорта + MockPrinterTransport (симулятор)
 │   └── UsbPrinterTransport.kt   # Android USB Host API (USB OTG) транспорт
 ├── data/
-│   └── TemplateRepository.kt    # 6 встроенных шаблонов + хранение пользовательских в JSON
+│   ├── TemplateRepository.kt    # 6 встроенных шаблонов + хранение пользовательских в JSON
+│   ├── ProjectRepository.kt     # Каталог проектов в приватной памяти приложения (projects.json)
+│   └── ProjectCodec.kt          # Чистые функции кодирования/валидации файла проекта (.pt450.json)
 └── ui/
     ├── Theme.kt                 # Цветовая схема Material 3
-    ├── LabelViewModel.kt        # Состояние редактора, рендеринг, USB и печать
+    ├── LabelViewModel.kt        # Состояние редактора, проекты, рендеринг, USB и печать
     ├── EditorScreen.kt          # Главный экран редактора, предпросмотр и диалог отреза
     ├── TemplatesSheet.kt        # Диалог выбора, сохранения и удаления шаблонов
+    ├── ProjectsDialog.kt        # Диалог проектов: сохранить/открыть/удалить/экспорт/импорт
     └── PrinterDialog.kt         # Диалог USB OTG / симулятора, статуса, калибровки и hex-дампа
 ```
 
@@ -43,3 +47,5 @@ app/src/main/java/com/ptd450vp/labelprinter/
    Перед чтением статуса `UsbPrinterTransport` очищает буфер `Bulk IN` (`drainInputBuffer`), а при отправке задания делит поток на чанки по 4096 байт и после печати пытается считать статус завершения/ошибок.
 5. **Подсказка об отрезе после печати:**
    При успешной печати `LabelViewModel` выставляет `showCutPrompt = true`, и `EditorScreen` показывает диалог «Нажмите на нож, чтобы отрезать ленту». Диалог один на всю партию: при `Chain Print` этикетки выходят встык, поэтому дополнительно напоминает разрезать ленту между ними. Закрытие диалога — `dismissCutPrompt()`.
+6. **Проекты этикеток (`v0.2.0`):**
+   `LabelProject` хранит полный `LabelDocument` (включая картинки в base64) и `PrintOptions`. `ProjectRepository` ведёт каталог в `filesDir/projects.json` с атомарной заменой файла. Диалог `ProjectsDialog` позволяет сохранить текущий проект, сохранить копию, открыть или удалить проект. Экспорт/импорт идут через Storage Access Framework (`CreateDocument`/`OpenDocument`): файл `*.pt450.json` самодостаточен, `ProjectCodec` проверяет версию формата и название. Импортированный проект всегда получает новый `id`, чтобы не затирать существующий.

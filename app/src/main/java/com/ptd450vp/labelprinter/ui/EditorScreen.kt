@@ -1,5 +1,7 @@
 package com.ptd450vp.labelprinter.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -34,6 +36,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatAlignCenter
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.QrCode2
@@ -83,6 +86,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.ptd450vp.labelprinter.data.ProjectCodec
 import com.ptd450vp.labelprinter.model.BarcodeFormatOption
 import com.ptd450vp.labelprinter.model.DitherMode
 import com.ptd450vp.labelprinter.model.FontChoice
@@ -102,6 +106,18 @@ fun EditorScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showTemplatesDialog by remember { mutableStateOf(false) }
     var showPrinterDialog by remember { mutableStateOf(false) }
+    var showProjectsDialog by remember { mutableStateOf(false) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) viewModel.exportProject(uri)
+    }
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) viewModel.importProject(uri)
+    }
 
     LaunchedEffect(state.feedbackMessage) {
         val msg = state.feedbackMessage
@@ -135,6 +151,9 @@ fun EditorScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
+                    IconButton(onClick = { showProjectsDialog = true }) {
+                        Icon(Icons.Default.Folder, contentDescription = "Проекты")
+                    }
                     IconButton(onClick = { showTemplatesDialog = true }) {
                         Icon(Icons.Default.Bookmarks, contentDescription = "Шаблоны")
                     }
@@ -277,6 +296,27 @@ fun EditorScreen(
 
             item { Spacer(modifier = Modifier.height(24.dp)) }
         }
+    }
+
+    if (showProjectsDialog) {
+        ProjectsDialog(
+            projects = state.projects,
+            currentProjectId = state.currentProjectId,
+            currentProjectName = state.currentProjectName,
+            onDismiss = { showProjectsDialog = false },
+            onSave = { name, saveAsCopy -> viewModel.saveProject(name, saveAsCopy) },
+            onOpen = { project ->
+                viewModel.openProject(project)
+                showProjectsDialog = false
+            },
+            onDelete = viewModel::deleteProject,
+            onExport = {
+                exportLauncher.launch(ProjectCodec.fileNameFor(state.currentProjectName))
+            },
+            onImport = {
+                importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+            }
+        )
     }
 
     if (showTemplatesDialog) {
